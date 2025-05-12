@@ -1,0 +1,8 @@
+generatorName: go-gin-server
+outputDir: /local
+inputSpec: /local/api/ambulance.openapi.yaml
+enablePostProcessFile: true
+additionalProperties:
+  apiPath: internal/ambulance
+  packageName: ambulance
+  interfaceOnly: true

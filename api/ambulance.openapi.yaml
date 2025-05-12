@@ -1,0 +1,447 @@
+openapi: 3.0.0
+servers:
+  - description: Cluster Endpoint
+    url: /api
+info:
+  description: API for managing hospital ambulances, procedures, and payments.
+  version: "1.0.0"
+  title: Hospital Management API
+  contact:
+    email: xkokavecs@stuba.sk
+  license:
+    name: CC BY 4.0
+    url: "https://creativecommons.org/licenses/by/4.0/"
+tags:
+  - name: ambulanceManagement
+    description: Manage hospital ambulances including creation, update, deletion and viewing a summary of procedure costs.
+  - name: procedureManagement
+    description: Manage procedures including creation, viewing, update, and deletion. Each procedure is linked to an ambulance.
+  - name: paymentManagement
+    description: Manage payment records for procedures including creation, update, deletion, and overview of payments.
+paths:
+  /ambulances:
+    get:
+      tags:
+        - ambulanceManagement
+      summary: Get list of ambulances
+      operationId: getAmbulances
+      description: Retrieve a list of all ambulances with details such as name, location, and driver's name.
+      responses:
+        "200":
+          description: A list of ambulances.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ambulance"
+    post:
+      tags:
+        - ambulanceManagement
+      summary: Create a new ambulance
+      operationId: createAmbulance
+      description: Create a new ambulance.
+      requestBody:
+        required: true
+        description: Ambulance object that needs to be added to the system.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Ambulance"
+            examples:
+              ambulanceExample:
+                $ref: "#/components/examples/AmbulanceExample"
+      responses:
+        "201":
+          description: Ambulance successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ambulance"
+  /ambulances/{ambulanceId}:
+    parameters:
+      - in: path
+        name: ambulanceId
+        description: Unique identifier of the ambulance.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - ambulanceManagement
+      summary: Get ambulance details
+      operationId: getAmbulanceById
+      description: Retrieve details of a specific ambulance including a summary of the total procedure costs.
+      responses:
+        "200":
+          description: Ambulance details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ambulance"
+        "404":
+          description: Ambulance not found.
+    put:
+      tags:
+        - ambulanceManagement
+      summary: Update ambulance details
+      operationId: updateAmbulance
+      description: Update information of an existing ambulance.
+      requestBody:
+        required: true
+        description: Ambulance object with updated details.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Ambulance"
+      responses:
+        "200":
+          description: Ambulance successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ambulance"
+        "404":
+          description: Ambulance not found.
+    delete:
+      tags:
+        - ambulanceManagement
+      summary: Delete an ambulance and its associated procedures
+      operationId: deleteAmbulance
+      description: Delete an ambulance and all procedures linked to it.
+      responses:
+        "204":
+          description: Ambulance deleted successfully.
+        "404":
+          description: Ambulance not found.
+  /ambulances/{ambulanceId}/summary:
+    parameters:
+      - in: path
+        name: ambulanceId
+        description: Unique identifier of the ambulance.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - ambulanceManagement
+      summary: Get summary of procedure costs for an ambulance
+      operationId: getAmbulanceSummary
+      description: Retrieve the total sum of procedure costs for a specific ambulance.
+      responses:
+        "200":
+          description: Summary of procedure costs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCost:
+                    type: number
+                    format: float
+                    example: 1500.50
+        "404":
+          description: Ambulance not found.
+  /procedures:
+    get:
+      tags:
+        - procedureManagement
+      summary: Get list of procedures
+      operationId: getProcedures
+      description: Retrieve a list of all procedures with details including patient, visit type, price, payer, and associated ambulance.
+      responses:
+        "200":
+          description: A list of procedures.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Procedure"
+    post:
+      tags:
+        - procedureManagement
+      summary: Create a new procedure
+      operationId: createProcedure
+      description: Create a new procedure. An ambulance must be selected from the existing ambulances.
+      requestBody:
+        required: true
+        description: Procedure object to be created.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Procedure"
+            examples:
+              procedureExample:
+                $ref: "#/components/examples/ProcedureExample"
+      responses:
+        "201":
+          description: Procedure successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Procedure"
+  /procedures/{procedureId}:
+    parameters:
+      - in: path
+        name: procedureId
+        description: Unique identifier of the procedure.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - procedureManagement
+      summary: Get procedure details
+      operationId: getProcedureById
+      description: Retrieve details of a specific procedure.
+      responses:
+        "200":
+          description: Procedure details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Procedure"
+        "404":
+          description: Procedure not found.
+    put:
+      tags:
+        - procedureManagement
+      summary: Update procedure details
+      operationId: updateProcedure
+      description: Update an existing procedure.
+      requestBody:
+        required: true
+        description: Procedure object with updated information.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Procedure"
+      responses:
+        "200":
+          description: Procedure successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Procedure"
+        "404":
+          description: Procedure not found.
+    delete:
+      tags:
+        - procedureManagement
+      summary: Delete a procedure
+      operationId: deleteProcedure
+      description: Delete a procedure.
+      responses:
+        "204":
+          description: Procedure deleted successfully.
+        "404":
+          description: Procedure not found.
+  /payments:
+    get:
+      tags:
+        - paymentManagement
+      summary: Get list of payment records
+      operationId: getPayments
+      description: Retrieve a list of all payment records for procedures.
+      responses:
+        "200":
+          description: A list of payment records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+    post:
+      tags:
+        - paymentManagement
+      summary: Create a new payment record
+      operationId: createPayment
+      description: Create a new payment record for a procedure.
+      requestBody:
+        required: true
+        description: Payment record to be created.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Payment"
+            examples:
+              paymentExample:
+                $ref: "#/components/examples/PaymentExample"
+      responses:
+        "201":
+          description: Payment record successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /payments/{paymentId}:
+    parameters:
+      - in: path
+        name: paymentId
+        description: Unique identifier of the payment record.
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - paymentManagement
+      summary: Get payment record details
+      operationId: getPaymentById
+      description: Retrieve details of a specific payment record.
+      responses:
+        "200":
+          description: Payment record details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          description: Payment record not found.
+    put:
+      tags:
+        - paymentManagement
+      summary: Update payment record details
+      operationId: updatePayment
+      description: Update an existing payment record.
+      requestBody:
+        required: true
+        description: Payment record object with updated information.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Payment"
+      responses:
+        "200":
+          description: Payment record successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "404":
+          description: Payment record not found.
+    delete:
+      tags:
+        - paymentManagement
+      summary: Delete a payment record
+      operationId: deletePayment
+      description: Delete a payment record.
+      responses:
+        "204":
+          description: Payment record deleted successfully.
+        "404":
+          description: Payment record not found.
+components:
+  schemas:
+    Ambulance:
+      type: object
+      required:
+        - id
+        - name
+        - location
+        - driverName
+      properties:
+        id:
+          type: string
+          example: amb001
+          description: Unique identifier of the ambulance.
+        name:
+          type: string
+          example: Ambulancia Hlavná
+          description: Name of the ambulance.
+        location:
+          type: string
+          example: Hlavná ulica 123
+          description: Location or base of the ambulance.
+        driverName:
+          type: string
+          example: Ján Novák
+          description: Name of the driver in charge.
+    Procedure:
+      type: object
+      required:
+        - id
+        - patient
+        - visitType
+        - price
+        - payer
+        - ambulanceId
+      properties:
+        id:
+          type: string
+          example: prc001
+          description: Unique identifier of the procedure.
+        patient:
+          type: string
+          example: Peter Horváth
+          description: Name or identifier of the patient.
+        visitType:
+          type: string
+          example: konzultácia
+          description: Type of visit.
+        price:
+          type: number
+          format: float
+          example: 200.50
+          description: Price of the procedure.
+        payer:
+          type: string
+          example: poisťovňa XYZ
+          description: Payer for the procedure.
+        ambulanceId:
+          type: string
+          example: amb001
+          description: Identifier of the ambulance associated with the procedure.
+    Payment:
+      type: object
+      required:
+        - id
+        - procedureId
+        - insurance
+        - amount
+      properties:
+        id:
+          type: string
+          example: pay001
+          description: Unique identifier of the payment record.
+        procedureId:
+          type: string
+          example: prc001
+          description: Identifier of the related procedure.
+        insurance:
+          type: string
+          example: poisťovňa XYZ
+          description: Insurance or payer for the procedure.
+        amount:
+          type: number
+          format: float
+          example: 200.50
+          description: Payment amount.
+  examples:
+    AmbulanceExample:
+      summary: Example ambulance
+      description: An example ambulance record.
+      value:
+        id: amb001
+        name: Ambulancia Hlavná
+        location: Hlavná ulica 123
+        driverName: Ján Novák
+    ProcedureExample:
+      summary: Example procedure
+      description: An example procedure record.
+      value:
+        id: prc001
+        patient: Peter Horváth
+        visitType: konzultácia
+        price: 200.50
+        payer: poisťovňa XYZ
+        ambulanceId: amb001
+    PaymentExample:
+      summary: Example payment record
+      description: An example payment record.
+      value:
+        id: pay001
+        procedureId: prc001
+        insurance: poisťovňa XYZ
+        amount: 200.50
