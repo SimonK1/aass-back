@@ -30,7 +30,7 @@
  }
  
  func getDB(c *gin.Context) db_service.DbService[Ambulance] {
-	 return c.MustGet("db_service").(db_service.DbService[Ambulance])
+	 return c.MustGet("db_service_ambulance").(db_service.DbService[Ambulance])
  }
  
  func withAmbulanceByID(c *gin.Context, fn func(c *gin.Context, ambulance *Ambulance) (*Ambulance, interface{}, int)) {
@@ -167,4 +167,21 @@
 		 return nil, summary, http.StatusOK
 	 })
  }
+
+ // GetProceduresByAmbulance returns all procedures associated with a given ambulance.
+func (o *implAmbulanceAPI) GetProceduresByAmbulance(c *gin.Context) {
+    ambulanceID := c.Param("ambulanceId")
+    if ambulanceID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ambulanceId is required"})
+        return
+    }
+
+    // NOTE: replace the following stub with your actual DB/store call.
+    // e.g. procedures, err := o.store.GetProceduresByAmbulanceID(ctx, ambulanceID)
+    // For now, we’ll return an empty slice.
+    procedures := []Procedure{}
+
+    c.JSON(http.StatusOK, procedures)
+}
+
  

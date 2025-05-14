@@ -1,0 +1,9 @@
+internal/ambulance/README.md
+internal/ambulance/api_ambulance_management.go
+internal/ambulance/api_payment_management.go
+internal/ambulance/api_procedure_management.go
+internal/ambulance/model_ambulance.go
+internal/ambulance/model_get_ambulance_summary_200_response.go
+internal/ambulance/model_payment.go
+internal/ambulance/model_procedure.go
+internal/ambulance/routers.go

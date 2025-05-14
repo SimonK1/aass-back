@@ -39,6 +39,10 @@ type AmbulanceManagementAPI interface {
 
     // UpdateAmbulance Put /api/ambulances/:ambulanceId
     // Update ambulance details 
-     UpdateAmbulance(c *gin.Context)
+    UpdateAmbulance(c *gin.Context)
+     
+    // GetProceduresByAmbulance Get /api/ambulances/:ambulanceId/procedures
+    // Retrieve all procedures linked to an ambulance
+    GetProceduresByAmbulance(c *gin.Context)
 
 }

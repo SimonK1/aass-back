@@ -21,7 +21,7 @@ func NewPaymentAPI() PaymentManagementAPI {
 
 // getPaymentDB extracts the DbService[Payment] from the context.
 func getPaymentDB(c *gin.Context) db_service.DbService[Payment] {
-    return c.MustGet("db_service").(db_service.DbService[Payment])
+    return c.MustGet("db_service_payment").(db_service.DbService[Payment])
 }
 
 // withPaymentByID loads a Payment and calls fn; fn may return an updated doc.
@@ -96,13 +96,49 @@ func (o *implPaymentAPI) GetPaymentById(c *gin.Context) {
     })
 }
 
-// GetPayments implements GET /api/payments
 func (o *implPaymentAPI) GetPayments(c *gin.Context) {
-    // Listing is not supported by DbService interface
-    c.JSON(http.StatusNotImplemented, gin.H{
-        "message": "Listing payments is not supported by the current DbService interface",
-    })
+    db := getPaymentDB(c)
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    procedureID := c.Query("procedure_id")
+
+    var payments []*Payment
+    var err error
+
+    if procedureID != "" {
+        payments, err = db.FindDocumentsByField(ctx, "procedure_id", procedureID)
+    } else {
+        // ✅ Call your generic method to list all
+        var result []Payment
+        result, err = db.ListDocuments(ctx)
+        if err != nil {
+            log.Println("ListDocuments error:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to retrieve payments"})
+            return
+        }
+
+        c.JSON(http.StatusOK, result)
+        return
+    }
+
+    if err != nil {
+        log.Println("FindDocumentsByField error:", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to retrieve payments"})
+        return
+    }
+
+    // Convert []*Payment to []Payment (if needed)
+    var result []Payment
+    for _, p := range payments {
+        result = append(result, *p)
+    }
+
+    c.JSON(http.StatusOK, result)
 }
+
+
+
 
 // UpdatePayment implements PUT /api/payments/:paymentId
 func (o *implPaymentAPI) UpdatePayment(c *gin.Context) {

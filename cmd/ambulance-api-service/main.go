@@ -7,17 +7,13 @@ import (
     "strings"
     "time"
 
+
     "github.com/gin-contrib/cors"
     "github.com/gin-gonic/gin"
 
     "github.com/wac-project/wac-api/api"
-    "github.com/wac-project/wac-api/internal/ambulance"
-    "github.com/wac-project/wac-api/internal/db_service"
-
-    // 🎯 Zeebe & Camunda integration
-    zb "github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
-    "github.com/aass/internal/workers"
-    perfapi "github.com/aass/internal/api" // alias so it doesn’t conflict
+	"github.com/wac-project/wac-api/internal/ambulance"
+	"github.com/wac-project/wac-api/internal/db_service"
 )
 
 func main() {
@@ -46,34 +42,22 @@ func main() {
     })
     engine.Use(corsMiddleware)
 
-    // ─── Zeebe Client & Workflow Deployment ────────────────────────────────────────
-    zc, err := zb.NewClient(&zb.ClientConfig{
-        GatewayAddress:         "0.0.0.0:26500",
-        UsePlaintextConnection: true,
-    })
-    if err != nil {
-        log.Fatalf("Zeebe client error: %v", err)
-    }
+    // one service per collection/type
+   dbAmbSvc  := db_service.NewMongoService[ambulance.Ambulance](db_service.MongoServiceConfig{Collection: "ambulance"})
+   dbPaySvc  := db_service.NewMongoService[ambulance.Payment](  db_service.MongoServiceConfig{Collection: "payment"})
+   dbProcSvc := db_service.NewMongoService[ambulance.Procedure](db_service.MongoServiceConfig{Collection: "procedure"})
 
-    resp, err := zc.NewDeployProcessCommand().
-        AddResourceFile("deployments/detailed_project_diagram_v2.bpmn").
-        Send(context.Background())
-    if err != nil {
-        log.Fatalf("Workflow deployment failed: %v", err)
-    }
-    for _, wf := range resp.Processes {
-        log.Printf("Deployed %s (version %d)", wf.BpmnProcessId, wf.Version)
-    }
+   // tear down all three on exit
+   defer dbAmbSvc.Disconnect(context.Background())
+   defer dbPaySvc.Disconnect(context.Background())
+   defer dbProcSvc.Disconnect(context.Background())
 
-    // ─── Start all Zeebe workers ───────────────────────────────────────────────────
-    workers.RegisterAll(zc)
-
-    dbService := db_service.NewMongoService[ambulance.Ambulance](db_service.MongoServiceConfig{})
-    defer dbService.Disconnect(context.Background())
-
-    engine.Use(func(ctx *gin.Context) {
-        ctx.Set("db_service", dbService)
-        ctx.Next()
+   // inject each under its own key
+   engine.Use(func(ctx *gin.Context) {
+       ctx.Set("db_service_ambulance", dbAmbSvc)
+       ctx.Set("db_service_payment",   dbPaySvc)
+       ctx.Set("db_service_procedure",  dbProcSvc)
+           ctx.Next()
     })
 
     handleFunctions := &ambulance.ApiHandleFunctions{
@@ -83,10 +67,6 @@ func main() {
     }
 
     ambulance.NewRouterWithGinEngine(engine, *handleFunctions)
-
-    // 🎯 Add the performance‐start endpoint
-    engine.POST("/api/v1/performance", perfapi.StartPerformanceHandler(zc))
-
     engine.GET("/openapi", api.HandleOpenApi)
     engine.Run(":" + port)
 }

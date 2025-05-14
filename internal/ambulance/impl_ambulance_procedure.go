@@ -5,6 +5,9 @@ import (
     "log"
     "net/http"
     "time"
+    "bytes"
+    "encoding/json"
+    "io"
 
     "github.com/gin-gonic/gin"
     "github.com/google/uuid"
@@ -21,7 +24,7 @@ func NewProcedureAPI() ProcedureManagementAPI {
 
 // getProcedureDB extracts the DbService[Procedure] from the context.
 func getProcedureDB(c *gin.Context) db_service.DbService[Procedure] {
-    return c.MustGet("db_service").(db_service.DbService[Procedure])
+    return c.MustGet("db_service_procedure").(db_service.DbService[Procedure])
 }
 
 // withProcedureByID loads a Procedure and calls fn; fn may return an updated doc.
@@ -86,6 +89,55 @@ func (o *implProcedureAPI) CreateProcedure(c *gin.Context) {
         }
         return
     }
+
+    // ✅ Start Camunda BPMN process after saving
+    go func(p Procedure) {
+        client := &http.Client{Timeout: 5 * time.Second}
+
+        procedureJSON, err := json.Marshal(p)
+        if err != nil {
+            log.Println("Failed to marshal procedure to JSON:", err)
+            return
+        }
+
+        payload := map[string]interface{}{
+            "variables": map[string]interface{}{
+                "procedureData": map[string]interface{}{
+                    "value": string(procedureJSON),
+                    "type":  "Json",
+                },
+            },
+            "businessKey": p.Id,
+        }
+
+        body, err := json.Marshal(payload)
+        if err != nil {
+            log.Println("Failed to marshal Camunda payload:", err)
+            return
+        }
+
+        req, err := http.NewRequest("POST", "http://localhost:8082/engine-rest/process-definition/key/SubmitMedicalPerformance/start", bytes.NewBuffer(body))
+        if err != nil {
+            log.Println("Failed to create Camunda request:", err)
+            return
+        }
+        req.Header.Set("Content-Type", "application/json")
+
+        resp, err := client.Do(req)
+        if err != nil {
+            log.Println("Failed to start Camunda process:", err)
+            return
+        }
+        defer resp.Body.Close()
+
+        bodyBytes, _ := io.ReadAll(resp.Body)
+        if resp.StatusCode >= 300 {
+            log.Printf("Camunda returned error: %s\n", string(bodyBytes))
+        } else {
+            log.Println("Camunda process started for procedure", p.Id)
+        }
+    }(p)
+
     c.JSON(http.StatusCreated, p)
 }
 
@@ -96,12 +148,31 @@ func (o *implProcedureAPI) GetProcedureById(c *gin.Context) {
     })
 }
 
-// GetProcedures implements GET /api/procedures
 func (o *implProcedureAPI) GetProcedures(c *gin.Context) {
-    // Listing is not supported by DbService interface
-    c.JSON(http.StatusNotImplemented, gin.H{
-        "message": "Listing procedures is not supported by the current DbService interface",
-    })
+    db := getProcedureDB(c)
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    ambulanceID := c.Query("ambulance_id")
+
+    var (
+        procedures any
+        err        error
+    )
+
+    if ambulanceID != "" {
+        procedures, err = db.FindDocumentsByField(ctx, "ambulance_id", ambulanceID)
+    } else {
+        procedures, err = db.ListDocuments(ctx)
+    }
+
+    if err != nil {
+        log.Println("Error retrieving procedures:", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to retrieve procedures"})
+        return
+    }
+
+    c.JSON(http.StatusOK, procedures)
 }
 
 // UpdateProcedure implements PUT /api/procedures/:procedureId

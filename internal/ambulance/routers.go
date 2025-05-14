@@ -73,7 +73,8 @@
 		 {"GetAmbulanceSummary", http.MethodGet, "/api/ambulances/:ambulanceId/summary", handleFunctions.AmbulanceManagementAPI.GetAmbulanceSummary},
 		 {"GetAmbulances", http.MethodGet, "/api/ambulances", handleFunctions.AmbulanceManagementAPI.GetAmbulances},
 		 {"UpdateAmbulance", http.MethodPut, "/api/ambulances/:ambulanceId", handleFunctions.AmbulanceManagementAPI.UpdateAmbulance},
- 
+		{"GetProceduresByAmbulance", http.MethodGet, "/api/ambulances/:ambulanceId/procedures", handleFunctions.AmbulanceManagementAPI.GetProceduresByAmbulance},
+		
 		 // Payment routes
 		 {"CreatePayment", http.MethodPost, "/api/payments", handleFunctions.PaymentManagementAPI.CreatePayment},
 		 {"DeletePayment", http.MethodDelete, "/api/payments/:paymentId", handleFunctions.PaymentManagementAPI.DeletePayment},

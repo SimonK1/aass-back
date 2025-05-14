@@ -1,0 +1,199 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.io/schema/zeebe/1.0" id="Definitions_Detailed" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.34.0">
+  <bpmn:process xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="SubmitMedicalPerformance" name="Submit Medical Performance" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:startEvent id="StartEvent" name="Doctor Submits Performance">
+      <bpmn:outgoing>Flow_Save</bpmn:outgoing>
+      <bpmn:outgoing>Flow_06yv0kc</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="SaveRecord" name="Save Performance Record" camunda:type="external" camunda:topic="taskTopic1">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="save-record"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Save</bpmn:incoming>
+      <bpmn:incoming>Flow_06yv0kc</bpmn:incoming>
+      <bpmn:outgoing>Flow_Validate</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1lgwz8t</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ValidateData" name="Validate Data" camunda:type="external" camunda:topic="taskTopic2">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="validate-data"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Validate</bpmn:incoming>
+      <bpmn:incoming>Flow_1lgwz8t</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckValidity</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1ea8xhf</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Validity" name="Data Valid?" camunda:default="Flow_Invalid">
+      <bpmn:incoming>Flow_CheckValidity</bpmn:incoming>
+      <bpmn:incoming>Flow_1ea8xhf</bpmn:incoming>
+      <bpmn:outgoing>Flow_Valid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Invalid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1gwcqb1</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1c6ers1</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="CorrectData" name="Correct Invalid Data">
+      <bpmn:incoming>Flow_Invalid</bpmn:incoming>
+      <bpmn:incoming>Flow_1c6ers1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Validate</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="ApproveSubmission" name="Approve Submission">
+      <bpmn:incoming>Flow_Valid</bpmn:incoming>
+      <bpmn:incoming>Flow_1gwcqb1</bpmn:incoming>
+      <bpmn:outgoing>Flow_Parallel</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0g0y0kp</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="Gateway_PostApproval">
+      <bpmn:incoming>Flow_Parallel</bpmn:incoming>
+      <bpmn:incoming>Flow_0g0y0kp</bpmn:incoming>
+      <bpmn:outgoing>Flow_Billing</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Notify</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1hs4jde</bpmn:outgoing>
+      <bpmn:outgoing>Flow_01k4n87</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="UpdateBilling" name="Update Billing" camunda:type="external" camunda:topic="taskTopic3">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="update-billing"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Billing</bpmn:incoming>
+      <bpmn:incoming>Flow_01k4n87</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join</bpmn:outgoing>
+      <bpmn:outgoing>Flow_14voq6t</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="NotifyDept" name="Notify Department" camunda:type="external" camunda:topic="taskTopic4">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="notify-department"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Notify</bpmn:incoming>
+      <bpmn:incoming>Flow_1hs4jde</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0e8nry9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="Gateway_Join">
+      <bpmn:incoming>Flow_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_14voq6t</bpmn:incoming>
+      <bpmn:incoming>Flow_0e8nry9</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+      <bpmn:outgoing>Flow_01h1xid</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="EndEvent" name="Process Completed">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+      <bpmn:incoming>Flow_01h1xid</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Save" sourceRef="StartEvent" targetRef="SaveRecord"/>
+    <bpmn:sequenceFlow id="Flow_Validate" sourceRef="SaveRecord" targetRef="ValidateData"/>
+    <bpmn:sequenceFlow id="Flow_CheckValidity" sourceRef="ValidateData" targetRef="Gateway_Validity"/>
+    <bpmn:sequenceFlow id="Flow_Invalid" sourceRef="Gateway_Validity" targetRef="CorrectData"/>
+    <bpmn:sequenceFlow id="Flow_Valid" sourceRef="Gateway_Validity" targetRef="ApproveSubmission"><bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">${someVar == 'value1'}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Parallel" sourceRef="ApproveSubmission" targetRef="Gateway_PostApproval"/>
+    <bpmn:sequenceFlow id="Flow_Billing" sourceRef="Gateway_PostApproval" targetRef="UpdateBilling"/>
+    <bpmn:sequenceFlow id="Flow_Notify" sourceRef="Gateway_PostApproval" targetRef="NotifyDept"/>
+    <bpmn:sequenceFlow id="Flow_Join" sourceRef="UpdateBilling" targetRef="Gateway_Join"/>
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Gateway_Join" targetRef="EndEvent"/>
+    <bpmn:sequenceFlow id="Flow_06yv0kc" sourceRef="StartEvent" targetRef="SaveRecord"/>
+    <bpmn:sequenceFlow id="Flow_1lgwz8t" sourceRef="SaveRecord" targetRef="ValidateData"/>
+    <bpmn:sequenceFlow id="Flow_1ea8xhf" sourceRef="ValidateData" targetRef="Gateway_Validity"/>
+    <bpmn:sequenceFlow id="Flow_1gwcqb1" sourceRef="Gateway_Validity" targetRef="ApproveSubmission"><bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">${someVar == 'value2'}</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0g0y0kp" sourceRef="ApproveSubmission" targetRef="Gateway_PostApproval"/>
+    <bpmn:sequenceFlow id="Flow_1hs4jde" sourceRef="Gateway_PostApproval" targetRef="NotifyDept"/>
+    <bpmn:sequenceFlow id="Flow_01k4n87" sourceRef="Gateway_PostApproval" targetRef="UpdateBilling"/>
+    <bpmn:sequenceFlow id="Flow_14voq6t" sourceRef="UpdateBilling" targetRef="Gateway_Join"/>
+    <bpmn:sequenceFlow id="Flow_0e8nry9" sourceRef="NotifyDept" targetRef="Gateway_Join"/>
+    <bpmn:sequenceFlow id="Flow_01h1xid" sourceRef="Gateway_Join" targetRef="EndEvent"/>
+    <bpmn:sequenceFlow id="Flow_1c6ers1" sourceRef="Gateway_Validity" targetRef="CorrectData"><bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">${someVar == 'value3'}</bpmn:conditionExpression></bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Detailed">
+    <bpmndi:BPMNPlane id="Plane_Detailed" bpmnElement="SubmitMedicalPerformance">
+      <bpmndi:BPMNShape id="NotifyDept_di" bpmnElement="NotifyDept">
+        <dc:Bounds x="900" y="230" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
+        <dc:Bounds x="172" y="172" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="152" y="208" width="76" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SaveRecord_di" bpmnElement="SaveRecord">
+        <dc:Bounds x="270" y="150" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ValidateData_di" bpmnElement="ValidateData">
+        <dc:Bounds x="420" y="150" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Validity_di" bpmnElement="Gateway_Validity" isMarkerVisible="true">
+        <dc:Bounds x="565" y="165" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="561" y="133" width="57" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CorrectData_di" bpmnElement="CorrectData">
+        <dc:Bounds x="540" y="300" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ApproveSubmission_di" bpmnElement="ApproveSubmission">
+        <dc:Bounds x="660" y="150" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_PostApproval_di" bpmnElement="Gateway_PostApproval" isMarkerVisible="true">
+        <dc:Bounds x="795" y="165" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UpdateBilling_di" bpmnElement="UpdateBilling">
+        <dc:Bounds x="900" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Join_di" bpmnElement="Gateway_Join" isMarkerVisible="true">
+        <dc:Bounds x="1075" y="165" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_di" bpmnElement="EndEvent">
+        <dc:Bounds x="1202" y="172" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1193" y="208" width="54" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_06yv0kc_di" bpmnElement="Flow_06yv0kc">
+        <di:waypoint x="208" y="190"/>
+        <di:waypoint x="270" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lgwz8t_di" bpmnElement="Flow_1lgwz8t">
+        <di:waypoint x="370" y="190"/>
+        <di:waypoint x="420" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ea8xhf_di" bpmnElement="Flow_1ea8xhf">
+        <di:waypoint x="520" y="190"/>
+        <di:waypoint x="565" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1gwcqb1_di" bpmnElement="Flow_1gwcqb1">
+        <di:waypoint x="615" y="190"/>
+        <di:waypoint x="660" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0g0y0kp_di" bpmnElement="Flow_0g0y0kp">
+        <di:waypoint x="760" y="190"/>
+        <di:waypoint x="795" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hs4jde_di" bpmnElement="Flow_1hs4jde">
+        <di:waypoint x="820" y="215"/>
+        <di:waypoint x="820" y="270"/>
+        <di:waypoint x="900" y="270"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01k4n87_di" bpmnElement="Flow_01k4n87">
+        <di:waypoint x="820" y="165"/>
+        <di:waypoint x="820" y="120"/>
+        <di:waypoint x="900" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14voq6t_di" bpmnElement="Flow_14voq6t">
+        <di:waypoint x="1000" y="120"/>
+        <di:waypoint x="1100" y="120"/>
+        <di:waypoint x="1100" y="165"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e8nry9_di" bpmnElement="Flow_0e8nry9">
+        <di:waypoint x="1000" y="270"/>
+        <di:waypoint x="1100" y="270"/>
+        <di:waypoint x="1100" y="215"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01h1xid_di" bpmnElement="Flow_01h1xid">
+        <di:waypoint x="1125" y="190"/>
+        <di:waypoint x="1202" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1c6ers1_di" bpmnElement="Flow_1c6ers1">
+        <di:waypoint x="590" y="215"/>
+        <di:waypoint x="590" y="300"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
