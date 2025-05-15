@@ -15,10 +15,13 @@
 	 "log"
 	 "net/http"
 	 "time"
+	 "encoding/json"
  
 	 "github.com/gin-gonic/gin"
 	 "github.com/google/uuid"
 	 "github.com/wac-project/wac-api/internal/db_service"
+
+    "github.com/wac-project/wac-api/pkg/kafka"
  )
  
  // implAmbulanceAPI implements the AmbulanceManagementAPI interface using the standard DbService interface.
@@ -91,6 +94,14 @@
 		 }
 		 return
 	 }
+
+	 evt := map[string]interface{}{
+    	"type":         "ambulance_created",
+    	"ambulance_id": ambulance.Id,
+    	"status":       ambulance.Status,
+    }
+  	b, _ := json.Marshal(evt)
+	kafka.Send(ctx, []byte(ambulance.Id), b)
  
 	 c.JSON(http.StatusCreated, ambulance)
  }

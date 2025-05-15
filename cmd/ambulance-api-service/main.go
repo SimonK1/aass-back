@@ -8,16 +8,24 @@ import (
     "time"
 
 
+
     "github.com/gin-contrib/cors"
     "github.com/gin-gonic/gin"
 
     "github.com/wac-project/wac-api/api"
 	"github.com/wac-project/wac-api/internal/ambulance"
 	"github.com/wac-project/wac-api/internal/db_service"
+    "github.com/wac-project/wac-api/pkg/kafka"
 )
+
+
 
 func main() {
     log.Printf("Server started")
+
+    // point this at your local Docker-Compose broker
+    kafka.Init([]string{"localhost:9092"}, "hospital-events")
+    log.Println("✅ Kafka producer initialized")
 
     port := os.Getenv("AMBULANCE_API_PORT")
     if port == "" {

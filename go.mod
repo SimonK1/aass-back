@@ -12,6 +12,11 @@ require (
 )
 
 require (
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/segmentio/kafka-go v0.4.48 // indirect
+)
+
+require (
 	github.com/bytedance/sonic v1.12.6 // indirect
 	github.com/bytedance/sonic/loader v0.2.1 // indirect
 	github.com/citilinkru/camunda-client-go/v3 v3.1.1
